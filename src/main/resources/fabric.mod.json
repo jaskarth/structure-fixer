@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "structure-fixer",
+  "version": "${version}",
+  "name": "Structure Fixer",
+  "description": "Updates structure files to the latest version.",
+  "authors": [
+    "SuperCoder79"
+  ],
+  "contact": {},
+  "license": "LGPL-3.0",
+  "icon": "assets/structure-fixer/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "supercoder79.structurefixer.client.StructureFixerClient"
+    ],
+    "main": [
+      "supercoder79.structurefixer.StructureFixer"
+    ]
+  },
+  "mixins": [
+    "structure-fixer.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.10.0",
+    "minecraft": ">=1.19"
+  }
+}
