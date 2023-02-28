@@ -3,6 +3,7 @@ package supercoder79.structurefixer;
 import com.mojang.datafixers.DataFixer;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtUtils;
@@ -47,7 +48,7 @@ public class StructureFixer implements ModInitializer {
 
                 CompoundTag fixedTag = NbtUtils.update(fixer, DataFixTypes.STRUCTURE, tag, tag.getInt("DataVersion"));
                 StructureTemplate structureTemplate = new StructureTemplate();
-                structureTemplate.load(fixedTag);
+                structureTemplate.load(BuiltInRegistries.BLOCK.asLookup(), fixedTag);
 
                 Path outDir = output.resolve(path);
                 outDir.toFile().mkdirs();
