@@ -23,7 +23,7 @@
     "structure-fixer.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.10.0",
-    "minecraft": ">=1.19"
+    "fabricloader": ">=0.14.21",
+    "minecraft": ">=1.20"
   }
 }

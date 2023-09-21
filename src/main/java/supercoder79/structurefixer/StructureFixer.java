@@ -2,10 +2,11 @@ package supercoder79.structurefixer;
 
 import com.mojang.datafixers.DataFixer;
 import net.fabricmc.api.ModInitializer;
+import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
@@ -23,42 +24,60 @@ public class StructureFixer implements ModInitializer {
         file.mkdirs();
         output.mkdirs();
 
-        update(file, "", outPath, fixer);
+        updateAllInDirectory(file, "", outPath, fixer);
     }
 
-    private static void update(File directory, String path, Path output, DataFixer fixer) {
+    private static void updateAllInDirectory(File directory, String path, Path output, DataFixer fixer) {
         for (File file : directory.listFiles()) {
             String name = file.getName();
 
+            // Recurse directories
             if (file.isDirectory()) {
-                update(file, path + name + "/", output, fixer);
+                updateAllInDirectory(file, path + name + "/", output, fixer);
                 continue;
             }
 
-            String absolutePath = file.getAbsolutePath();
-            System.out.println("Trying to update " + absolutePath);
+            Path outDir = output.resolve(path);
+            updateFile(file, outDir, fixer);
+        }
+    }
 
-            try {
-                CompoundTag tag = NbtIo.readCompressed(file);
+    private static void updateFile(File file, Path outDir, DataFixer fixer) {
+        String absolutePath = file.getAbsolutePath();
+        String name = file.getName();
 
-                if (!tag.contains("DataVersion", 99)) {
-                    tag.putInt("DataVersion", 500);
-                }
+        System.out.println("Trying to update " + absolutePath);
 
-                CompoundTag fixedTag = NbtUtils.update(fixer, DataFixTypes.STRUCTURE, tag, tag.getInt("DataVersion"));
+        if (file.isDirectory()) {
+            System.out.println("Skipping " + absolutePath + " because it is a directory");
+            return;
+        }
+
+        try {
+            CompoundTag tag = NbtIo.readCompressed(file);
+
+            if (!tag.contains("DataVersion", 99)) {
+                tag.putInt("DataVersion", 500);
+            }
+
+            int currentDataVersion = tag.getInt("DataVersion");
+            int requiredMinimumDataVersion = SharedConstants.getCurrentVersion().getDataVersion().getVersion();
+            if (currentDataVersion < requiredMinimumDataVersion) {
+                CompoundTag fixedTag = DataFixTypes.STRUCTURE.update(fixer, tag, currentDataVersion, SharedConstants.getCurrentVersion().getDataVersion().getVersion());
+
+                // Create a StructureTemplate from the fixed tag and save it to NBT
                 StructureTemplate structureTemplate = new StructureTemplate();
-                structureTemplate.load(fixedTag);
-
-                Path outDir = output.resolve(path);
-                outDir.toFile().mkdirs();
+                structureTemplate.load(BuiltInRegistries.BLOCK.asLookup(), fixedTag);
                 CompoundTag resultTag = structureTemplate.save(new CompoundTag());
 
+                // Write the new NBT to file
+                outDir.toFile().mkdirs();
                 NbtIo.writeCompressed(resultTag, outDir.resolve(name).toFile());
 
                 System.out.println("Updated " + absolutePath + " from version " + tag.getInt("DataVersion") + " to " + resultTag.getInt("DataVersion"));
-            } catch (Exception e) {
-                System.out.println("Could not update " + absolutePath);
             }
+        } catch (Exception e) {
+            System.out.println("Could not update " + absolutePath +": " + e.getMessage());
         }
     }
 }
